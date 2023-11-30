@@ -1,0 +1,5 @@
+client_secret.json
+token_drive_v3.pickle
+.idea
+__pycache__
+venv
