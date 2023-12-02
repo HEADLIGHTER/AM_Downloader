@@ -1,5 +1,7 @@
 import pickle
 import os
+
+import googleapiclient.errors
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
@@ -15,6 +17,7 @@ CLIENT_SECRET_FILE = "client_secret.json"
 API_NAME = "drive"
 API_VERSION = "v3"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+
 
 # Create a Google Drive API service
 def Create_Service(client_secret_file, api_name, api_version, *scopes):
@@ -105,51 +108,58 @@ def listfolders(filid, des):
 # Download folders with files
 def downloadfolders(folder_ids):
     for folder_id in folder_ids:
-        folder = service.files().get(fileId=folder_id).execute()
-        folder_name = folder.get("name")
-        page_token = None
-        while True:
-            results = (
-                service.files()
-                .list(
-                    q=f"'{folder_id}' in parents",
-                    spaces="drive",
-                    fields="nextPageToken, files(id, name, mimeType)",
+        try:
+            folder = service.files().get(fileId=folder_id).execute()
+            folder_name = folder.get("name")
+            page_token = None
+            while True:
+                results = (
+                    service.files()
+                    .list(
+                        q=f"'{folder_id}' in parents",
+                        spaces="drive",
+                        fields="nextPageToken, files(id, name, mimeType)",
+                    )
+                    .execute()
                 )
-                .execute()
-            )
-            page_token = results.get("nextPageToken", None)
-            if page_token is None:
-                items = results.get("files", [])
-                #send all items in this section
-                if not items:
-                    # download files
-                    downloadfiles(folder_id, folder_name)
-                    print(folder_name)
-                else:
-                    # download folders
-                    print(f"Start downloading folder '{folder_name}'.")
-                    for item in items:
-                        if item["mimeType"] == "application/vnd.google-apps.folder":
-                            if not os.path.isdir(folder_name):
-                                os.mkdir(folder_name)
-                            bfolderpath = os.path.join(os.getcwd(), folder_name)
-                            if not os.path.isdir(
-                                os.path.join(bfolderpath, item["name"])
-                            ):
-                                os.mkdir(os.path.join(bfolderpath, item["name"]))
+                page_token = results.get("nextPageToken", None)
+                if page_token is None:
+                    items = results.get("files", [])
+                    # send all items in this section
+                    if not items:
+                        # download files
+                        downloadfiles(folder_id, folder_name)
+                        print(folder_name)
+                    else:
+                        # download folders
+                        print(f"Start downloading folder '{folder_name}'.")
+                        for item in items:
+                            if item["mimeType"] == "application/vnd.google-apps.folder":
+                                if not os.path.isdir(folder_name):
+                                    os.mkdir(folder_name)
+                                bfolderpath = os.path.join(os.getcwd(), folder_name)
+                                if not os.path.isdir(
+                                    os.path.join(bfolderpath, item["name"])
+                                ):
+                                    os.mkdir(os.path.join(bfolderpath, item["name"]))
 
-                            folderpath = os.path.join(bfolderpath, item["name"])
-                            listfolders(item["id"], folderpath)
-                        else:
-                            if not os.path.isdir(folder_name):
-                                os.mkdir(folder_name)
-                            bfolderpath = os.path.join(os.getcwd(), folder_name)
+                                folderpath = os.path.join(bfolderpath, item["name"])
+                                listfolders(item["id"], folderpath)
+                            else:
+                                if not os.path.isdir(folder_name):
+                                    os.mkdir(folder_name)
+                                bfolderpath = os.path.join(os.getcwd(), folder_name)
 
-                            filepath = os.path.join(bfolderpath, item["name"])
-                            downloadfiles(item["id"], filepath)
-                            print(item["name"])
-            break
+                                filepath = os.path.join(bfolderpath, item["name"])
+                                downloadfiles(item["id"], filepath)
+                                print(item["name"])
+                break
+        except googleapiclient.errors.HttpError:
+            print('This folder is not available: ' + folder_id)
+            errors = open('bad_links', 'a')
+            errors.write('https://drive.google.com/drive/folders/' + folder_id + '\n')
+            pass
+
 
 # Search id of specific folder name under a parent folder id
 def get_gdrive_id(folder_ids, folder_names):
@@ -202,6 +212,7 @@ def parse_opt(links_list: list):
     opt = parser.parse_args(links_list)
     return opt
 
+
 def extract_drive_id(links):
     # Remove any leading or trailing spaces from the link
     print(links)
@@ -223,6 +234,7 @@ def extract_drive_id(links):
     else:
         return None
 
+
 def main(opt):
     if opt.link:
         uniq_id = extract_drive_id(opt.link)
@@ -240,3 +252,4 @@ if __name__ == "__main__":
     service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
     opt = parse_opt(get_pure_list())
     main(opt)
+    print('\nDon\'t forget to check bad_links file!')
