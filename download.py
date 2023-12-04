@@ -1,6 +1,6 @@
 import pickle
 import os
-
+import pathlib
 import googleapiclient.errors
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -68,7 +68,7 @@ def downloadfiles(dowid, dfilespath, folder=None):
             pbar.update(int(status.progress() * 100) - pbar.n)
     pbar.close()
     if folder:
-        with io.open(folder + "/" + dfilespath, "wb") as f:
+        with io.open(folder + "\\" + dfilespath.replace('*', '-'), "wb") as f:
             fh.seek(0)
             f.write(fh.read())
     else:
@@ -156,7 +156,7 @@ def downloadfolders(folder_ids):
                 break
         except googleapiclient.errors.HttpError:
             print('This folder is not available: ' + folder_id)
-            errors = open('bad_links', 'a')
+            errors = open('bad_links.txt', 'a')
             errors.write('https://drive.google.com/drive/folders/' + folder_id + '\n')
             pass
 
