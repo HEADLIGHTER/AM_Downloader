@@ -105,6 +105,8 @@ def listfolders(filid, des):
                 except FileNotFoundError:
                     print('Idiot shit happens, check idiot_shit file please!')
                     print(item['name'])
+                    idiot_shit = open('idiot_shit.txt', 'a')
+                    idiot_shit.write(des + '\n')
                     pass
             break
     return folder
