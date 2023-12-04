@@ -72,7 +72,7 @@ def downloadfiles(dowid, dfilespath, folder=None):
             fh.seek(0)
             f.write(fh.read())
     else:
-        with io.open(dfilespath, "wb") as f:
+        with io.open(dfilespath.replace('*', '-'), "wb") as f:
             fh.seek(0)
             f.write(fh.read())
 
@@ -94,14 +94,19 @@ def listfolders(filid, des):
         if page_token is None:
             folder = results.get("files", [])
             for item in folder:
-                if str(item["mimeType"]) == str("application/vnd.google-apps.folder"):
-                    if not os.path.isdir(des + "/" + item["name"]):
-                        os.mkdir(path=des + "/" + item["name"])
-                    listfolders(item["id"], des + "/" + item["name"])
-                else:
-                    downloadfiles(item["id"], item["name"], des)
-                    print(item["name"])
-        break
+                try:
+                    if str(item["mimeType"]) == str("application/vnd.google-apps.folder"):
+                        if not os.path.isdir(des + "\\" + item["name"]):
+                                os.mkdir(path=des + "\\" + item["name"])
+                        listfolders(item["id"], des + "\\" + item["name"])
+                    else:
+                        downloadfiles(item["id"], item["name"], des)
+                        print(item["name"])
+                except FileNotFoundError:
+                    print('Idiot shit happens, check idiot_shit file please!')
+                    print(item['name'])
+                    pass
+            break
     return folder
 
 
