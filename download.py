@@ -141,25 +141,32 @@ def downloadfolders(folder_ids):
                         # download folders
                         print(f"Start downloading folder '{folder_name}'.")
                         for item in items:
-                            if item["mimeType"] == "application/vnd.google-apps.folder":
-                                if not os.path.isdir(folder_name):
-                                    os.mkdir(folder_name)
-                                bfolderpath = os.path.join(os.getcwd(), folder_name)
-                                if not os.path.isdir(
-                                    os.path.join(bfolderpath, item["name"])
-                                ):
-                                    os.mkdir(os.path.join(bfolderpath, item["name"]))
+                            try:
+                                if item["mimeType"] == "application/vnd.google-apps.folder":
+                                    if not os.path.isdir(folder_name):
+                                        os.mkdir(folder_name)
+                                    bfolderpath = os.path.join(os.getcwd(), folder_name)
+                                    if not os.path.isdir(
+                                        os.path.join(bfolderpath, item["name"])
+                                    ):
+                                        os.mkdir(os.path.join(bfolderpath, item["name"]))
 
-                                folderpath = os.path.join(bfolderpath, item["name"])
-                                listfolders(item["id"], folderpath)
-                            else:
-                                if not os.path.isdir(folder_name):
-                                    os.mkdir(folder_name)
-                                bfolderpath = os.path.join(os.getcwd(), folder_name)
+                                    folderpath = os.path.join(bfolderpath, item["name"])
+                                    listfolders(item["id"], folderpath)
+                                else:
+                                    if not os.path.isdir(folder_name):
+                                        os.mkdir(folder_name)
+                                    bfolderpath = os.path.join(os.getcwd(), folder_name)
 
-                                filepath = os.path.join(bfolderpath, item["name"])
-                                downloadfiles(item["id"], filepath)
-                                print(item["name"])
+                                    filepath = os.path.join(bfolderpath, item["name"])
+                                    downloadfiles(item["id"], filepath)
+                                    print(item["name"])
+                            except FileNotFoundError:
+                                print('Idiot shit happens, check idiot_shit file please!')
+                                print(item['name'])
+                                idiot_shit = open('idiot_shit.txt', 'a')
+                                idiot_shit.write(folder_name + '\n')
+                                pass
                 break
         except googleapiclient.errors.HttpError:
             print('This folder is not available: ' + folder_id)
